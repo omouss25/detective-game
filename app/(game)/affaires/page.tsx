@@ -1,223 +1,140 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { MapPin, Calendar, AlertTriangle, ChevronRight, Lock } from 'lucide-react'
-import type { Case, GameSession } from '@/lib/supabase/types'
+import { Plus, ChevronRight, CheckCircle, XCircle, Clock } from 'lucide-react'
+import type { GameSession } from '@/lib/supabase/types'
 
-const difficultyLabel = {
-  facile: 'Facile',
-  moyen: 'Moyen',
-  difficile: 'Difficile',
+const statusLabel = {
+  solved:    { label: 'Résolue',    class: 'text-green-400', icon: CheckCircle },
+  failed:    { label: 'Échouée',    class: 'text-red-400',   icon: XCircle },
+  active:    { label: 'En cours',   class: 'text-noir-gold', icon: Clock },
+  abandoned: { label: 'Abandonnée', class: 'text-noir-smoke', icon: XCircle },
 }
 
-export default async function CasesPage() {
+const difficultyLabel: Record<string, string> = {
+  facile: 'Facile', moyen: 'Moyen', difficile: 'Difficile',
+}
+
+export default async function AffairesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: cases }, { data: sessions }] = await Promise.all([
-    supabase.from('cases').select('*').eq('is_active', true).order('created_at'),
-    supabase.from('game_sessions').select('*').eq('user_id', user!.id),
+  const [{ data: sessionsRaw }, { data: profile }] = await Promise.all([
+    supabase
+      .from('game_sessions')
+      .select('*, cases(id, title, slug, difficulty, location, year, victim)')
+      .eq('user_id', user!.id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('profiles')
+      .select('username, cases_solved, cases_attempted')
+      .eq('id', user!.id)
+      .single(),
   ])
 
-  const sessionsByCase = ((sessions || []) as unknown as GameSession[]).reduce<Record<string, GameSession>>((acc, s) => {
-    if (!acc[s.case_id] || s.created_at > acc[s.case_id].created_at) {
-      acc[s.case_id] = s
-    }
-    return acc
-  }, {})
+  const sessions = (sessionsRaw || []) as unknown as (GameSession & {
+    cases: { id: string; title: string; slug: string; difficulty: string; location: string | null; year: number | null; victim: string | null } | null
+  })[]
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, cases_solved, cases_attempted')
-    .eq('id', user!.id)
-    .single()
+  const solvedCount = sessions.filter(s => s.status === 'solved').length
+  const activeSession = sessions.find(s => s.status === 'active')
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 py-10">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="flex items-center gap-2 text-noir-mist font-typewriter text-xs tracking-widest uppercase mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-noir-gold animate-flicker inline-block" />
-          Dossiers en Cours
+          Dossiers
         </div>
-        <h1 className="font-noir text-4xl sm:text-5xl font-black text-noir-cream mb-3">
-          Archives du Bureau
+        <h1 className="font-noir text-4xl font-black text-noir-cream mb-2">
+          Bureau des Enquêtes
         </h1>
-        <p className="text-noir-mist italic max-w-xl">
-          Trois affaires non résolues attendent votre expertise, Inspecteur{' '}
-          <span className="text-noir-gold">{profile?.username || 'Inconnu'}</span>.
-          Choisissez votre prochaine enquête.
+        <p className="text-noir-mist italic text-sm">
+          Inspecteur <span className="text-noir-gold">{profile?.username || 'Inconnu'}</span> —{' '}
+          {solvedCount} affaire{solvedCount > 1 ? 's' : ''} résolue{solvedCount > 1 ? 's' : ''} sur {sessions.length} tentée{sessions.length > 1 ? 's' : ''}.
         </p>
-
-        {/* Stats */}
-        <div className="flex gap-6 mt-6">
-          <div className="text-center">
-            <div className="font-noir text-2xl text-noir-gold">{profile?.cases_solved || 0}</div>
-            <div className="text-noir-smoke text-xs font-typewriter">Résolues</div>
-          </div>
-          <div className="w-px bg-noir-smoke" />
-          <div className="text-center">
-            <div className="font-noir text-2xl text-noir-silver">{profile?.cases_attempted || 0}</div>
-            <div className="text-noir-smoke text-xs font-typewriter">Tentées</div>
-          </div>
-          <div className="w-px bg-noir-smoke" />
-          <div className="text-center">
-            <div className="font-noir text-2xl text-noir-silver">{(cases || []).length}</div>
-            <div className="text-noir-smoke text-xs font-typewriter">Disponibles</div>
-          </div>
-        </div>
       </div>
 
-      <div className="divider-noir mb-10" />
+      {/* Active session banner */}
+      {activeSession?.cases && (
+        <Link
+          href={`/affaires/${activeSession.cases.slug}/enquete?session=${activeSession.id}`}
+          className="block card-noir border-noir-gold/40 rounded-sm p-4 mb-8 hover:border-noir-gold transition-colors group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-noir-gold text-xs font-typewriter mb-1">● Enquête en cours</div>
+              <div className="font-noir text-noir-cream font-bold group-hover:text-noir-gold transition-colors">
+                {activeSession.cases.title}
+              </div>
+              <div className="text-noir-smoke text-xs font-typewriter mt-0.5">
+                {activeSession.cases.location} · {activeSession.cases.year}
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-noir-gold group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+      )}
 
-      {/* Cases grid */}
-      {!cases || cases.length === 0 ? (
-        <div className="text-center py-20">
-          <Lock size={40} className="text-noir-smoke mx-auto mb-4" />
-          <p className="text-noir-mist font-typewriter">
-            Aucune affaire disponible pour le moment.
-          </p>
-          <p className="text-noir-smoke text-sm mt-2">
-            Les dossiers sont en cours de classification...
-          </p>
+      {/* New case CTA */}
+      <Link
+        href="/affaires/nouvelle"
+        className="btn-noir w-full py-5 rounded-sm text-base flex items-center justify-center gap-3 mb-10"
+      >
+        <Plus size={18} />
+        Nouvelle Affaire Générée par l'IA
+      </Link>
+
+      <div className="divider-noir mb-8" />
+
+      {/* History */}
+      <h2 className="font-noir text-xl text-noir-gold mb-5">Historique</h2>
+
+      {sessions.length === 0 ? (
+        <div className="text-center py-12 text-noir-mist font-typewriter text-sm italic">
+          Aucune affaire dans votre dossier. Lancez votre première enquête.
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {((cases as unknown as Case[]) || []).map((c, index) => {
-            const session = sessionsByCase[c.id]
-            const status = session?.status
+        <div className="space-y-3">
+          {sessions.map((session) => {
+            const case_ = session.cases
+            if (!case_) return null
+            const st = statusLabel[session.status as keyof typeof statusLabel] || statusLabel.abandoned
+            const StatusIcon = st.icon
+            const href = session.status === 'active'
+              ? `/affaires/${case_.slug}/enquete?session=${session.id}`
+              : `/affaires/${case_.slug}/resolution?session=${session.id}`
+
             return (
-              <CaseCard
-                key={c.id}
-                case_={c}
-                sessionStatus={status}
-                sessionId={session?.id}
-                index={index}
-              />
+              <Link
+                key={session.id}
+                href={href}
+                className="flex items-center justify-between p-4 rounded border border-noir-smoke/50 hover:border-noir-gold/50 transition-all group"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <StatusIcon size={15} className={`flex-shrink-0 ${st.class}`} />
+                  <div className="min-w-0">
+                    <div className="font-noir text-noir-cream text-sm font-bold truncate group-hover:text-noir-gold transition-colors">
+                      {case_.title}
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs font-typewriter text-noir-smoke mt-0.5">
+                      <span className={`badge-${case_.difficulty} px-1.5 py-0.5 rounded`}>
+                        {difficultyLabel[case_.difficulty] || case_.difficulty}
+                      </span>
+                      {case_.location && <span>{case_.location}</span>}
+                      <span>{new Date(session.created_at).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  <span className={`text-xs font-typewriter hidden sm:inline ${st.class}`}>{st.label}</span>
+                  <ChevronRight size={14} className="text-noir-smoke group-hover:text-noir-gold transition-colors" />
+                </div>
+              </Link>
             )
           })}
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="mt-16 card-noir rounded-sm p-6">
-        <h3 className="font-noir text-lg text-noir-gold mb-3">Comment enquêter</h3>
-        <div className="grid sm:grid-cols-3 gap-4 text-sm text-noir-mist font-typewriter">
-          <div className="flex gap-3">
-            <span className="text-noir-gold font-bold">01.</span>
-            <span>Interrogez les suspects — l'IA joue chaque personnage avec ses mensonges et ses secrets</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-noir-gold font-bold">02.</span>
-            <span>Examinez les indices sur la scène de crime et recoupez les témoignages</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-noir-gold font-bold">03.</span>
-            <span>Accusez le coupable quand vous êtes certain — une seule chance de résoudre l'affaire</span>
-          </div>
-        </div>
-      </div>
     </div>
-  )
-}
-
-function CaseCard({
-  case_,
-  sessionStatus,
-  sessionId,
-  index,
-}: {
-  case_: Case
-  sessionStatus?: string
-  sessionId?: string
-  index: number
-}) {
-  const href = sessionId && sessionStatus === 'active'
-    ? `/affaires/${case_.slug}/enquete?session=${sessionId}`
-    : `/affaires/${case_.slug}`
-
-  const isSolved = sessionStatus === 'solved'
-  const isFailed = sessionStatus === 'failed'
-  const isActive = sessionStatus === 'active'
-
-  return (
-    <Link
-      href={href}
-      className="card-noir rounded-sm overflow-hidden group hover:border-noir-gold/50 transition-all duration-300 block"
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      {/* Cover image placeholder */}
-      <div className="relative h-40 bg-gradient-to-br from-noir-charcoal to-noir-black overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center opacity-20">
-          <span className="text-8xl select-none">
-            {index === 0 ? '🏛️' : index === 1 ? '🎹' : '🕰️'}
-          </span>
-        </div>
-        {/* Atmospheric overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-noir-dark via-transparent to-transparent" />
-
-        {/* Status badge */}
-        {(isSolved || isFailed || isActive) && (
-          <div className={`absolute top-3 right-3 px-2 py-0.5 rounded text-xs font-typewriter ${
-            isSolved ? 'bg-green-950 text-green-400 border border-green-800' :
-            isFailed ? 'bg-red-950 text-red-400 border border-red-900' :
-            'bg-noir-sepia/50 text-noir-gold border border-noir-sepia'
-          }`}>
-            {isSolved ? '✓ Résolue' : isFailed ? '✗ Échouée' : '● En cours'}
-          </div>
-        )}
-
-        {/* Difficulty */}
-        <div className={`absolute top-3 left-3 px-2 py-0.5 rounded text-xs font-typewriter badge-${case_.difficulty}`}>
-          {difficultyLabel[case_.difficulty]}
-        </div>
-      </div>
-
-      <div className="p-5">
-        {/* Year + location */}
-        <div className="flex items-center gap-3 text-noir-smoke text-xs font-typewriter mb-3">
-          {case_.year && (
-            <span className="flex items-center gap-1">
-              <Calendar size={10} />
-              {case_.year}
-            </span>
-          )}
-          {case_.location && (
-            <span className="flex items-center gap-1">
-              <MapPin size={10} />
-              {case_.location}
-            </span>
-          )}
-        </div>
-
-        <h2 className="font-noir text-lg font-bold text-noir-cream leading-snug mb-2 group-hover:text-noir-gold transition-colors">
-          {case_.title}
-        </h2>
-
-        {case_.victim && (
-          <p className="text-xs text-noir-mist font-typewriter mb-3 flex items-center gap-1">
-            <AlertTriangle size={10} className="text-red-500" />
-            Victime : {case_.victim}
-          </p>
-        )}
-
-        <p className="text-noir-mist text-sm leading-relaxed line-clamp-3 mb-4">
-          {case_.description}
-        </p>
-
-        {/* Suspects count */}
-        {Array.isArray(case_.suspects) && (
-          <div className="text-xs text-noir-smoke font-typewriter">
-            {case_.suspects.length} suspects identifiés
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-noir-smoke/30">
-          <span className="text-noir-gold text-xs font-typewriter">
-            {isActive ? 'Continuer l\'enquête' : isSolved ? 'Voir la résolution' : 'Ouvrir le dossier'}
-          </span>
-          <ChevronRight size={14} className="text-noir-gold group-hover:translate-x-1 transition-transform" />
-        </div>
-      </div>
-    </Link>
   )
 }
