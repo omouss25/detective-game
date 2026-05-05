@@ -78,9 +78,10 @@ export default function NewCaseClient() {
 
       const { caseSlug, sessionId } = await res.json()
       router.push(`/affaires/${caseSlug}/enquete?session=${sessionId}`)
-    } catch (err: any) {
+    } catch (err) {
       clearInterval(stepInterval)
-      setError(err.message || 'Impossible de générer l\'affaire. Réessayez.')
+      const msg = err instanceof Error ? err.message : 'Impossible de générer l\'affaire.'
+      setError(msg)
       setLoading(false)
     }
   }
@@ -90,7 +91,7 @@ export default function NewCaseClient() {
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-8 px-4">
         <div className="text-6xl animate-pulse">🔍</div>
         <div className="text-center">
-          <h2 className="font-noir text-2xl text-noir-gold mb-3">Création de l'affaire</h2>
+          <h2 className="font-noir text-2xl text-noir-gold mb-3">Création de l&apos;affaire</h2>
           <p className="text-noir-mist font-typewriter text-sm italic min-h-[1.5em] transition-all">
             {LOADING_STEPS[loadingStep]}
           </p>
@@ -101,7 +102,7 @@ export default function NewCaseClient() {
           <span className="loading-dot w-2 h-2 rounded-full bg-noir-gold" />
         </div>
         <p className="text-noir-smoke text-xs font-typewriter">
-          L'IA génère une affaire unique rien que pour vous...
+          L&apos;IA génère une affaire unique rien que pour vous...
         </p>
       </div>
     )
@@ -113,15 +114,15 @@ export default function NewCaseClient() {
         <div className="inline-flex items-center gap-2 border border-noir-sepia/50 bg-noir-charcoal/50 rounded px-4 py-1.5 mb-5">
           <Shuffle size={12} className="text-noir-gold" />
           <span className="font-typewriter text-noir-mist text-xs tracking-widest uppercase">
-            Affaire générée par l'IA — Jamais la même
+            Affaire générée par l&apos;IA — Jamais la même
           </span>
         </div>
         <h1 className="font-noir text-4xl font-black text-noir-cream mb-3">
           Nouvelle Enquête
         </h1>
         <p className="text-noir-mist italic text-sm">
-          Choisissez votre difficulté et le cadre de l'affaire.<br />
-          L'IA invente le reste — suspects, indices, coupable.
+          Choisissez votre difficulté et le cadre de l&apos;affaire.<br />
+          L&apos;IA invente le reste — suspects, indices, coupable.
         </p>
       </div>
 
@@ -154,7 +155,7 @@ export default function NewCaseClient() {
       <div className="mb-10">
         <label className="block text-noir-silver text-sm font-typewriter tracking-wider mb-3">
           <MapPin size={12} className="inline mr-1" />
-          Cadre de l'affaire
+          Cadre de l&apos;affaire
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {SETTINGS.map((s) => (
@@ -186,7 +187,7 @@ export default function NewCaseClient() {
         className="btn-noir w-full py-4 rounded-sm text-base flex items-center justify-center gap-3"
       >
         <Shuffle size={18} />
-        Générer l'Affaire
+        Générer l&apos;Affaire
       </button>
 
       <p className="text-center text-noir-smoke text-xs font-typewriter mt-4">

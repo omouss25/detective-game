@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import InvestigationClient from './InvestigationClient'
+import type { Case, GameSession, Message } from '@/lib/supabase/types'
 
 export default async function InvestigationPage({
   params,
@@ -47,9 +48,9 @@ export default async function InvestigationPage({
 
   return (
     <InvestigationClient
-      case_={case_ as any}
-      session={session as any}
-      initialMessages={(messages || []) as any}
+      case_={case_ as unknown as Case}
+      session={session as unknown as GameSession}
+      initialMessages={(messages || []) as unknown as Message[]}
     />
   )
 }

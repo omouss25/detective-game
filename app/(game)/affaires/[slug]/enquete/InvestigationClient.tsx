@@ -4,8 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Send, FileText, Users, Search, Gavel, ArrowLeft,
-  ChevronDown, ChevronUp, MessageSquare, StickyNote
+  Send, FileText, Users, Search, Gavel, ArrowLeft, StickyNote
 } from 'lucide-react'
 import type { Case, GameSession, Message, Suspect } from '@/lib/supabase/types'
 
@@ -199,7 +198,6 @@ export default function InvestigationClient({ case_, session, initialMessages }:
     if (!accusedSuspect || !accusationText.trim()) return
     setAccusationLoading(true)
 
-    const accusationMsg = `ACCUSATION_FINALE: J'accuse ${accusedSuspect}. Voici mon raisonnement : ${accusationText}`
 
     const { data: savedMsg } = await supabase
       .from('messages')
@@ -342,7 +340,7 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       {showNotes && (
         <div className="border-b border-noir-smoke/50 bg-noir-charcoal/95 px-4 py-4 flex-shrink-0 animate-slide-in">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-noir text-noir-gold text-sm">Carnet d'Enquête</h3>
+            <h3 className="font-noir text-noir-gold text-sm">Carnet d&apos;Enquête</h3>
             <span className="text-noir-smoke text-xs font-typewriter">
               {notesSaving ? 'Sauvegarde...' : 'Sauvegarde auto'}
             </span>
@@ -432,7 +430,6 @@ export default function InvestigationClient({ case_, session, initialMessages }:
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === 'user'
   const isResolution = message.message_type === 'resolution'
-  const isAccusation = message.message_type === 'accusation'
 
   return (
     <div className={`animate-fade-in-up ${isUser ? 'flex justify-end' : ''}`}>
@@ -492,7 +489,7 @@ function AccusationModal({
         </div>
 
         <div className="bg-red-950/30 border border-red-900/50 rounded p-3 mb-5 text-red-300 text-xs font-typewriter">
-          ⚠ Cette action est irréversible. Réfléchissez bien avant d'accuser.
+          ⚠ Cette action est irréversible. Réfléchissez bien avant d&apos;accuser.
         </div>
 
         <div className="divider-noir mb-5" />

@@ -106,7 +106,7 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="space-y-5">
             <div>
               <label className="block text-noir-silver text-sm font-typewriter tracking-wider mb-1.5">
-                Nom d'inspecteur
+                Nom d&apos;inspecteur
               </label>
               <div className="relative">
                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-noir-mist" />

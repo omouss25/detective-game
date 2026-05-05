@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const { sessionId, caseId, message, isIntro } = await req.json()
+  const { sessionId, caseId, message } = await req.json()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

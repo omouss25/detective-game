@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { User, LogOut, BookOpen, Home, Menu, X } from 'lucide-react'
+import { User, LogOut, BookOpen, Menu, X } from 'lucide-react'
 
 interface NavbarProps {
   user?: { email?: string } | null
@@ -67,7 +67,7 @@ export default function Navbar({ user }: NavbarProps) {
                 Connexion
               </NavLink>
               <Link href="/inscription" className="btn-noir px-5 py-2 rounded text-sm">
-                Commencer l'enquête
+                Commencer l&apos;enquête
               </Link>
             </>
           )}
@@ -106,7 +106,7 @@ export default function Navbar({ user }: NavbarProps) {
                 Connexion
               </MobileNavLink>
               <MobileNavLink href="/inscription" onClick={() => setMenuOpen(false)}>
-                Commencer l'enquête
+                Commencer l&apos;enquête
               </MobileNavLink>
             </>
           )}

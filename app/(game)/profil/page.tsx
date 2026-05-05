@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { User, CheckCircle, XCircle, Clock, ChevronRight } from 'lucide-react'
-import type { Case, GameSession } from '@/lib/supabase/types'
+import type { GameSession } from '@/lib/supabase/types'
 
 const difficultyLabel = { facile: 'Facile', moyen: 'Moyen', difficile: 'Difficile' }
 const statusLabel = {

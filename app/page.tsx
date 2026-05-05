@@ -52,7 +52,7 @@ export default async function LandingPage() {
 
         {/* Tagline */}
         <p className="font-serif-italic text-noir-mist text-lg sm:text-xl italic mb-2">
-          "Dans l'obscurité de la nuit, la vérité se cache toujours."
+          &ldquo;Dans l&apos;obscurité de la nuit, la vérité se cache toujours.&rdquo;
         </p>
         <p className="text-noir-smoke text-sm font-typewriter tracking-widest mb-10">
           — Service des Enquêtes Criminelles, 1947 —
@@ -60,8 +60,8 @@ export default async function LandingPage() {
 
         {/* Description */}
         <p className="text-noir-silver text-base sm:text-lg leading-relaxed mb-10 max-w-xl mx-auto">
-          Prenez le rôle d'un inspecteur de la vieille école. Interrogez des suspects,
-          examinez des indices, débusquez le mensonge. L'IA joue tous les rôles.
+          Prenez le rôle d&apos;un inspecteur de la vieille école. Interrogez des suspects,
+          examinez des indices, débusquez le mensonge. L&apos;IA joue tous les rôles.
           Votre instinct fait le reste.
         </p>
 
@@ -77,7 +77,7 @@ export default async function LandingPage() {
                 Ouvrir un Dossier
               </Link>
               <Link href="/connexion" className="btn-ghost px-8 py-4 rounded-sm text-base">
-                J'ai déjà un badge
+                J&apos;ai déjà un badge
               </Link>
             </>
           )}
@@ -87,7 +87,7 @@ export default async function LandingPage() {
         <div className="grid grid-cols-3 gap-6 mt-16 text-center">
           {[
             { icon: '🔍', label: 'Enquêtez', desc: 'Examinez les scènes de crime et les indices' },
-            { icon: '💬', label: 'Interrogez', desc: 'L\'IA joue chaque suspect avec ses secrets' },
+            { icon: '💬', label: 'Interrogez', desc: "L'IA joue chaque suspect avec ses secrets" },
             { icon: '⚖️', label: 'Accusez', desc: 'Désignez le coupable et défendez votre théorie' },
           ].map((f) => (
             <div key={f.label} className="flex flex-col items-center gap-2">

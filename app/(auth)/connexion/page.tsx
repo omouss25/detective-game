@@ -43,7 +43,7 @@ export default function LoginPage() {
             </span>
           </Link>
           <h1 className="font-noir text-3xl font-bold text-noir-cream mb-2">
-            Vérification d'Identité
+            Vérification d&apos;Identité
           </h1>
           <p className="text-noir-mist font-typewriter text-sm italic">
             Accès réservé aux inspecteurs accrédités

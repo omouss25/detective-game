@@ -82,7 +82,7 @@ export default async function AffairesPage() {
         className="btn-noir w-full py-5 rounded-sm text-base flex items-center justify-center gap-3 mb-10"
       >
         <Plus size={18} />
-        Nouvelle Affaire Générée par l'IA
+        Nouvelle Affaire Générée par l&apos;IA
       </Link>
 
       <div className="divider-noir mb-8" />
