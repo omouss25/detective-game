@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   let body: { sessionId?: unknown; caseId?: unknown; message?: unknown }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const systemPrompt = case_.system_prompt +
     '\n\nRÈGLE ABSOLUE : Ne termine JAMAIS une réponse par des suggestions d\'actions, une liste de choix, ou une question du type "Que souhaitez-vous faire ?", "Que décidez-vous ?", "Quelle est votre prochaine action ?". Termine toujours sur la narration ou le dialogue, point final.'
 
-  const stream = await anthropic.messages.stream({
+  const stream = await getAnthropic().messages.stream({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: systemPrompt,

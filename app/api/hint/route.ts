@@ -4,7 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getUserPlan } from '@/lib/subscription'
 import { PLANS } from '@/lib/stripe'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     `${m.role === 'user' ? 'Inspecteur' : 'Narrateur'}: ${m.content.slice(0, 300)}`
   ).join('\n')
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 200,
     messages: [{

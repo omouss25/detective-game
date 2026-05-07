@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { checkCaseLimit, incrementDailyUsage } from '@/lib/subscription'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // Genres inspirés des grands maîtres du roman policier
 const GENRES = [
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   const safeSetting = setting.trim()
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       messages: [{ role: 'user', content: GENERATION_PROMPT(difficulty, safeSetting) }],

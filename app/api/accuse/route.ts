@@ -4,7 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { calculateScore } from '@/lib/subscription'
 import type { CaseSolution, Suspect } from '@/lib/supabase/types'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   let body: { sessionId?: unknown; caseId?: unknown; accusedSuspectId?: unknown }
@@ -76,7 +76,7 @@ La vérité complète du meurtre : ${solution.motive}
 
 Écris une scène narrative (2-3 paragraphes) où l'accusé prouve son innocence et le vrai coupable s'échappe ou reste libre. Le narrateur conclut sur l'échec de l'enquête avec une touche amère. Style film noir. L'inspecteur réalise son erreur.`
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 800,
     system: case_.system_prompt,
