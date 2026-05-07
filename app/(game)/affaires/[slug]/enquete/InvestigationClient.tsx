@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Send, FileText, Users, Search, Gavel, ArrowLeft, StickyNote
+  Send, FileText, Users, Search, Gavel, ArrowLeft, StickyNote, PenLine
 } from 'lucide-react'
 import type { Case, GameSession, Message, Suspect } from '@/lib/supabase/types'
 
@@ -35,6 +35,9 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   const [accusedSuspect, setAccusedSuspect] = useState('')
   const [accusationText, setAccusationText] = useState('')
   const [accusationLoading, setAccusationLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [showCustomInput, setShowCustomInput] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -50,12 +53,34 @@ export default function InvestigationClient({ case_, session, initialMessages }:
     scrollToBottom()
   }, [messages, loading, scrollToBottom])
 
-  // Auto-send intro message if no messages yet
+  // Auto-send intro message if no messages yet, otherwise load suggestions
   useEffect(() => {
     if (initialMessages.length === 0) {
-      sendMessage('Présentez-moi cette affaire. Je viens d\'arriver sur les lieux.', true)
+      sendMessage('Présentez-moi cette affaire. Je viens d\'arriver sur les lieux.', true).then(() => {
+        fetchSuggestions()
+      })
+    } else {
+      fetchSuggestions()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchSuggestions = useCallback(async () => {
+    setSuggestionsLoading(true)
+    setSuggestions([])
+    try {
+      const res = await fetch('/api/suggest-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id }),
+      })
+      const data = await res.json()
+      setSuggestions(data.suggestions || [])
+    } catch {
+      setSuggestions([])
+    } finally {
+      setSuggestionsLoading(false)
+    }
+  }, [session.id])
 
   const saveNotes = useCallback(async (value: string) => {
     setNotesSaving(true)
@@ -75,6 +100,8 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   const sendMessage = async (text: string, isIntro = false) => {
     if (!text.trim() || loading) return
     setLoading(true)
+    setSuggestions([])
+    setShowCustomInput(false)
     if (!isIntro) setInput('')
 
     const userMsg: Omit<Message, 'id' | 'created_at'> = {
@@ -172,6 +199,7 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       setMessages(prev => prev.filter(m => m.id !== ('streaming-' + Date.now())))
     } finally {
       setLoading(false)
+      if (!isIntro) fetchSuggestions()
     }
   }
 
@@ -384,30 +412,71 @@ export default function InvestigationClient({ case_, session, initialMessages }:
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Actions */}
       <div className="border-t border-noir-smoke/50 bg-noir-dark/95 backdrop-blur-sm px-4 py-4 flex-shrink-0">
-        <form onSubmit={handleSubmit} className="flex gap-3 items-end max-w-4xl mx-auto">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Interrogez un suspect, examinez un indice, demandez des informations..."
-            rows={2}
-            className="input-noir flex-1 p-3 rounded-sm text-sm resize-none font-typewriter"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="btn-noir p-3 rounded-sm flex-shrink-0"
-          >
-            <Send size={16} />
-          </button>
-        </form>
-        <p className="text-noir-smoke text-xs font-typewriter text-center mt-2">
-          Entrée pour envoyer · Maj+Entrée pour nouvelle ligne
-        </p>
+        <div className="max-w-4xl mx-auto">
+          {/* Suggestions */}
+          {!showCustomInput && (
+            <div className="mb-3">
+              {suggestionsLoading ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-10 rounded border border-noir-smoke/30 bg-noir-charcoal/30 animate-pulse" />
+                  ))}
+                </div>
+              ) : suggestions.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(s)}
+                      disabled={loading}
+                      className="px-3 py-2.5 rounded border border-noir-smoke/50 hover:border-noir-gold/60 hover:bg-noir-sepia/20 text-noir-silver hover:text-noir-cream text-xs font-typewriter text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* Custom input */}
+          {showCustomInput && (
+            <form onSubmit={handleSubmit} className="flex gap-2 items-end mb-3">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Votre question..."
+                rows={2}
+                className="input-noir flex-1 p-3 rounded-sm text-sm resize-none font-typewriter"
+                disabled={loading}
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="btn-noir p-3 rounded-sm flex-shrink-0"
+              >
+                <Send size={16} />
+              </button>
+            </form>
+          )}
+
+          {/* Toggle custom input */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-noir-smoke hover:text-noir-mist text-xs font-typewriter transition-colors"
+            >
+              <PenLine size={11} />
+              {showCustomInput ? 'Retour aux suggestions' : 'Écrire ma propre question'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Accusation modal */}
