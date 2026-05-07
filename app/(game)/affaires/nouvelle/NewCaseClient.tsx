@@ -72,12 +72,14 @@ export default function NewCaseClient() {
       clearInterval(stepInterval)
 
       if (!res.ok) {
-        const data = await res.json()
+        let data: { error?: string; plan?: string } = {}
+        try { data = await res.json() } catch {}
         if (res.status === 429 && data.error === 'daily_limit_reached') {
           setError('daily_limit_reached')
         } else {
           throw new Error(data.error || 'Erreur de génération')
         }
+        setLoadingStep(0)
         setLoading(false)
         return
       }
@@ -184,10 +186,10 @@ export default function NewCaseClient() {
       {error === 'daily_limit_reached' ? (
         <div className="mb-4 p-4 bg-amber-950/30 border border-amber-900/50 rounded">
           <p className="text-amber-300 text-sm font-typewriter mb-2">
-            ⚠ Limite quotidienne atteinte — Vous avez utilisé votre enquête gratuite du jour.
+            ⚠ Limite quotidienne atteinte — Quota d&apos;enquêtes du jour épuisé.
           </p>
           <p className="text-amber-400/70 text-xs font-typewriter mb-3">
-            Revenez demain, ou passez à un grade supérieur pour continuer à enquêter.
+            Revenez demain à minuit, ou passez à un grade supérieur pour plus d&apos;enquêtes.
           </p>
           <a
             href="/tarifs"

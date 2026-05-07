@@ -9,21 +9,34 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { sessionId } = await req.json()
+  let body: { sessionId?: unknown }
+  try { body = await req.json() } catch { return NextResponse.json({ suggestions: defaultSuggestions() }) }
+
+  const { sessionId } = body
+  if (typeof sessionId !== 'string') return NextResponse.json({ suggestions: defaultSuggestions() })
+
+  // Verify session belongs to this user
+  const { data: session } = await supabase
+    .from('game_sessions')
+    .select('id')
+    .eq('id', sessionId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!session) return NextResponse.json({ suggestions: defaultSuggestions() })
 
   const { data: history } = await supabase
     .from('messages')
     .select('role, content')
     .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
-    .limit(10)
+    .order('created_at', { ascending: false })
+    .limit(6)
 
   if (!history || history.length === 0) {
     return NextResponse.json({ suggestions: defaultSuggestions() })
   }
 
-  const conversationSummary = history
-    .slice(-6)
+  const conversationSummary = [...history].reverse()
     .map(m => `${m.role === 'user' ? 'Inspecteur' : 'Narrateur'}: ${m.content.slice(0, 200)}`)
     .join('\n')
 
@@ -50,8 +63,13 @@ Règles strictes :
 
     const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : ''
     const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
-    const parsed = JSON.parse(cleaned)
-    return NextResponse.json({ suggestions: parsed.suggestions || defaultSuggestions() })
+    try {
+      const parsed = JSON.parse(cleaned)
+      const suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 4) : defaultSuggestions()
+      return NextResponse.json({ suggestions })
+    } catch {
+      return NextResponse.json({ suggestions: defaultSuggestions() })
+    }
   } catch {
     return NextResponse.json({ suggestions: defaultSuggestions() })
   }

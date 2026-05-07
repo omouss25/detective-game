@@ -38,7 +38,11 @@ export default function InvestigationClient({ case_, session, initialMessages }:
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const notesTimer = useRef<NodeJS.Timeout>()
+  const notesTimer = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  useEffect(() => {
+    return () => { if (notesTimer.current) clearTimeout(notesTimer.current) }
+  }, [])
 
   const suspects = (case_.suspects as unknown as Suspect[]) || []
 

@@ -83,5 +83,5 @@ Style roman noir, naturel, en français.`,
     .update({ hints_used: hintsUsed + 1 })
     .eq('id', sessionId)
 
-  return NextResponse.json({ hint, hintsRemaining: hintsLimit === Infinity ? Infinity : hintsLimit - hintsUsed - 1 })
+  return NextResponse.json({ hint, hintsRemaining: hintsLimit === Infinity ? null : hintsLimit - hintsUsed - 1 })
 }

@@ -8,14 +8,16 @@ export default function ShareButton({ text }: { text: string }) {
 
   const handleShare = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({ text })
-      } catch {}
+      try { await navigator.share({ text }) } catch {}
       return
     }
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      // Clipboard API unavailable (non-HTTPS or denied)
+    }
   }
 
   return (

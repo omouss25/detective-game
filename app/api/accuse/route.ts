@@ -22,12 +22,13 @@ export async function POST(req: NextRequest) {
 
   const { data: session } = await supabase
     .from('game_sessions')
-    .select('id, user_id, hints_used, started_at')
+    .select('id, user_id, hints_used, started_at, status')
     .eq('id', sessionId)
     .eq('user_id', user.id)
     .single()
 
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+  if (session.status !== 'active') return NextResponse.json({ error: 'Session already resolved' }, { status: 400 })
 
   // Count messages
   const { count: messageCount } = await supabase
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
   const validSuspect = suspects.find(s => s.name === accusedSuspectId)
   if (!validSuspect) return NextResponse.json({ error: 'Invalid suspect' }, { status: 400 })
 
-  const isCorrect = accusedSuspectId === solution.culprit_name || validSuspect.id === solution.culprit_id
+  const isCorrect = accusedSuspectId === solution.culprit_name || accusedSuspectId === solution.culprit_id
 
   const hintsUsed = session.hints_used ?? 0
   const durationSeconds = session.started_at

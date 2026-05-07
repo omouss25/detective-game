@@ -49,10 +49,14 @@ export default function PricingButtons({ plan, isCurrent, isPopular, isFree, isL
       <button
         onClick={async () => {
           setLoading(true)
-          const res = await fetch('/api/stripe/portal', { method: 'POST' })
-          const { url } = await res.json()
-          if (url) window.location.href = url
-          else setLoading(false)
+          try {
+            const res = await fetch('/api/stripe/portal', { method: 'POST' })
+            const data = await res.json()
+            if (data.url) window.location.href = data.url
+            else setLoading(false)
+          } catch {
+            setLoading(false)
+          }
         }}
         disabled={loading}
         className="w-full py-3 rounded-sm text-sm font-typewriter border border-noir-smoke text-noir-mist hover:text-noir-silver transition-colors disabled:opacity-50"

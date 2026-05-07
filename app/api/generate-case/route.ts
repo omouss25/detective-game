@@ -116,11 +116,11 @@ export async function POST(req: NextRequest) {
     try {
       caseData = JSON.parse(cleaned)
     } catch {
-      console.error('JSON parse error:', cleaned.slice(0, 200))
-      return NextResponse.json({ error: 'Case generation failed — invalid JSON' }, { status: 500 })
+      console.error('JSON parse error in case generation')
+      return NextResponse.json({ error: 'Case generation failed' }, { status: 500 })
     }
 
-    const slug = `case-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const slug = `case-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
 
     const adminClient = createAdminClient()
     const { data: savedCase, error: caseError } = await adminClient

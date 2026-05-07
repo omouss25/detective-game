@@ -23,12 +23,16 @@ export async function POST(req: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  // Get or create Stripe customer
+  // Get or create Stripe customer, and block if already on this plan
   const { data: sub } = await adminClient
     .from('subscriptions')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, plan, status')
     .eq('user_id', user.id)
     .single()
+
+  if (sub?.plan === plan && sub?.status === 'active') {
+    return NextResponse.json({ error: 'Already subscribed to this plan' }, { status: 400 })
+  }
 
   let customerId = sub?.stripe_customer_id
 
@@ -43,7 +47,12 @@ export async function POST(req: NextRequest) {
       .upsert({ user_id: user.id, stripe_customer_id: customerId, plan: 'free', status: 'active' })
   }
 
-  const origin = req.headers.get('origin') || 'https://localhost:3000'
+  // Validate origin against allowed hosts only
+  const rawOrigin = req.headers.get('origin') || ''
+  const allowedOrigins = (process.env.NEXT_PUBLIC_APP_URL || '').split(',').map(s => s.trim()).filter(Boolean)
+  const origin = allowedOrigins.includes(rawOrigin)
+    ? rawOrigin
+    : (process.env.NEXT_PUBLIC_APP_URL?.split(',')[0]?.trim() || 'https://localhost:3000')
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
