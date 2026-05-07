@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Send, FileText, Users, Search, Gavel, ArrowLeft, StickyNote, PenLine
+  Send, FileText, Users, Gavel, ArrowLeft, StickyNote, PenLine
 } from 'lucide-react'
 import type { Case, GameSession, Message, Suspect } from '@/lib/supabase/types'
 
@@ -14,11 +14,6 @@ interface Props {
   initialMessages: Message[]
 }
 
-const QUICK_ACTIONS = [
-  { label: 'Examiner la scène', prompt: 'Examinez la scène de crime en détail. Décrivez ce que vous voyez.' },
-  { label: 'Demander l\'autopsie', prompt: 'Quels sont les résultats de l\'autopsie de la victime ?' },
-  { label: 'Liste des indices', prompt: 'Faites le récapitulatif de tous les indices disponibles sur cette affaire.' },
-]
 
 export default function InvestigationClient({ case_, session, initialMessages }: Props) {
   const router = useRouter()
@@ -33,7 +28,6 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   const [showSuspects, setShowSuspects] = useState(false)
   const [showAccuse, setShowAccuse] = useState(false)
   const [accusedSuspect, setAccusedSuspect] = useState('')
-  const [accusationText, setAccusationText] = useState('')
   const [accusationLoading, setAccusationLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
@@ -216,14 +210,12 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   }
 
   const handleSuspectQuestion = (suspect: Suspect) => {
-    const prompt = `Interrogatoire de ${suspect.name} — Je veux vous parler directement, ${suspect.name}. Où étiez-vous au moment du crime ?`
-    setInput(prompt)
-    inputRef.current?.focus()
+    sendMessage(`Interrogatoire de ${suspect.name} — Je veux vous parler directement, ${suspect.name}. Où étiez-vous au moment du crime ?`)
     setShowSuspects(false)
   }
 
   const handleAccusation = async () => {
-    if (!accusedSuspect || !accusationText.trim()) return
+    if (!accusedSuspect) return
     setAccusationLoading(true)
 
 
@@ -232,7 +224,7 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       .insert({
         session_id: session.id,
         role: 'user',
-        content: `J'accuse ${accusedSuspect}. ${accusationText}`,
+        content: `J'accuse ${accusedSuspect}.`,
         message_type: 'accusation',
         metadata: { accused: accusedSuspect },
       })
@@ -249,7 +241,6 @@ export default function InvestigationClient({ case_, session, initialMessages }:
           sessionId: session.id,
           caseId: case_.id,
           accusedSuspectId: accusedSuspect,
-          reasoning: accusationText,
         }),
       })
 
@@ -332,34 +323,42 @@ export default function InvestigationClient({ case_, session, initialMessages }:
         </div>
       </div>
 
-      {/* Suspects panel */}
+      {/* Suspects overlay */}
       {showSuspects && (
-        <div className="border-b border-noir-smoke/50 bg-noir-charcoal/95 px-4 py-4 flex-shrink-0 animate-slide-in">
-          <h3 className="font-noir text-noir-gold text-sm mb-3">Suspects — Cliquez pour interroger</h3>
-          <div className="flex flex-wrap gap-2">
-            {suspects.map((s) => (
+        <div
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowSuspects(false)}
+        >
+          <div
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-noir-charcoal border-l border-noir-smoke/50 overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-noir-charcoal border-b border-noir-smoke/50 px-5 py-4 flex items-center justify-between">
+              <h2 className="font-noir text-noir-gold text-lg">Dossier des Suspects</h2>
               <button
-                key={s.id}
-                onClick={() => handleSuspectQuestion(s)}
-                className="flex items-center gap-2 btn-ghost px-3 py-2 rounded text-xs"
-              >
-                <span>👤</span>
-                <div className="text-left">
-                  <div className="text-noir-cream font-bold">{s.name}</div>
-                  <div className="text-noir-smoke">{s.role}</div>
+                onClick={() => setShowSuspects(false)}
+                className="text-noir-smoke hover:text-noir-silver transition-colors text-xl leading-none"
+              >✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              {suspects.map((s) => (
+                <div key={s.id} className="border border-noir-smoke/40 rounded bg-noir-dark/50 p-4">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      <div className="font-noir text-noir-cream font-bold">{s.name}</div>
+                      <div className="text-noir-gold text-xs font-typewriter mt-0.5">{s.role}</div>
+                    </div>
+                    <button
+                      onClick={() => handleSuspectQuestion(s)}
+                      className="flex-shrink-0 px-3 py-1.5 rounded border border-noir-sepia/60 text-noir-gold hover:bg-noir-sepia/20 text-xs font-typewriter transition-colors"
+                    >
+                      Interroger
+                    </button>
+                  </div>
+                  <p className="text-noir-silver text-sm leading-relaxed">{s.description}</p>
                 </div>
-              </button>
-            ))}
-            {QUICK_ACTIONS.map((a) => (
-              <button
-                key={a.label}
-                onClick={() => { setInput(a.prompt); setShowSuspects(false); inputRef.current?.focus() }}
-                className="flex items-center gap-2 px-3 py-2 rounded text-xs border border-noir-sepia/50 text-noir-gold hover:bg-noir-sepia/20 transition-colors font-typewriter"
-              >
-                <Search size={10} />
-                {a.label}
-              </button>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -485,8 +484,6 @@ export default function InvestigationClient({ case_, session, initialMessages }:
           suspects={suspects}
           accusedSuspect={accusedSuspect}
           setAccusedSuspect={setAccusedSuspect}
-          accusationText={accusationText}
-          setAccusationText={setAccusationText}
           onConfirm={handleAccusation}
           onCancel={() => setShowAccuse(false)}
           loading={accusationLoading}
@@ -534,8 +531,6 @@ function AccusationModal({
   suspects,
   accusedSuspect,
   setAccusedSuspect,
-  accusationText,
-  setAccusationText,
   onConfirm,
   onCancel,
   loading,
@@ -543,29 +538,27 @@ function AccusationModal({
   suspects: Suspect[]
   accusedSuspect: string
   setAccusedSuspect: (v: string) => void
-  accusationText: string
-  setAccusationText: (v: string) => void
   onConfirm: () => void
   onCancel: () => void
   loading: boolean
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="card-noir rounded-sm max-w-lg w-full p-6 animate-fade-in-up">
+      <div className="card-noir rounded-sm max-w-md w-full p-6 animate-fade-in-up">
         <div className="flex items-center gap-3 mb-4">
           <Gavel size={20} className="text-red-400" />
           <h2 className="font-noir text-xl text-noir-cream">Accusation Finale</h2>
         </div>
 
         <div className="bg-red-950/30 border border-red-900/50 rounded p-3 mb-5 text-red-300 text-xs font-typewriter">
-          ⚠ Cette action est irréversible. Réfléchissez bien avant d&apos;accuser.
+          ⚠ Cette action est irréversible. Choisissez votre suspect avec soin.
         </div>
 
         <div className="divider-noir mb-5" />
 
-        <div className="mb-4">
-          <label className="block text-noir-silver text-sm font-typewriter mb-2">
-            Qui accusez-vous ?
+        <div className="mb-6">
+          <label className="block text-noir-smoke text-xs font-typewriter tracking-widest uppercase mb-3">
+            Qui accusez-vous du meurtre ?
           </label>
           <div className="grid gap-2">
             {suspects.map((s) => (
@@ -574,52 +567,41 @@ function AccusationModal({
                 onClick={() => setAccusedSuspect(s.name)}
                 className={`flex items-center gap-3 p-3 rounded border text-left transition-all ${
                   accusedSuspect === s.name
-                    ? 'border-red-700 bg-red-950/40 text-red-300'
-                    : 'border-noir-smoke hover:border-noir-gold text-noir-silver'
+                    ? 'border-red-700 bg-red-950/40'
+                    : 'border-noir-smoke/50 hover:border-noir-smoke'
                 }`}
               >
-                <span>👤</span>
+                <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${
+                  accusedSuspect === s.name ? 'border-red-500 bg-red-700' : 'border-noir-smoke'
+                }`} />
                 <div>
-                  <div className="font-bold text-sm">{s.name}</div>
-                  <div className="text-xs opacity-70">{s.role}</div>
+                  <div className={`font-noir text-sm font-bold ${accusedSuspect === s.name ? 'text-red-300' : 'text-noir-silver'}`}>
+                    {s.name}
+                  </div>
+                  <div className="text-noir-smoke text-xs font-typewriter">{s.role}</div>
                 </div>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mb-5">
-          <label className="block text-noir-silver text-sm font-typewriter mb-2">
-            Votre raisonnement
-          </label>
-          <textarea
-            value={accusationText}
-            onChange={(e) => setAccusationText(e.target.value)}
-            placeholder="Expliquez pourquoi vous accusez cette personne..."
-            rows={4}
-            className="input-noir w-full p-3 rounded text-sm font-typewriter resize-none"
-          />
-        </div>
-
         <div className="flex gap-3">
-          <button onClick={onCancel} className="btn-ghost flex-1 py-3 rounded-sm text-sm">
+          <button onClick={onCancel} className="btn-ghost flex-1 py-3 rounded-sm text-sm" disabled={loading}>
             Annuler
           </button>
           <button
             onClick={onConfirm}
-            disabled={!accusedSuspect || !accusationText.trim() || loading}
+            disabled={!accusedSuspect || loading}
             className="flex-1 py-3 rounded-sm text-sm font-typewriter font-bold uppercase tracking-wider bg-red-900 hover:bg-red-800 text-red-100 border border-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="flex gap-1">
-                  <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
-                  <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
-                  <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
-                </span>
+              <span className="flex items-center justify-center gap-1">
+                <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
+                <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
+                <span className="loading-dot w-1.5 h-1.5 rounded-full bg-red-200 inline-block" />
               </span>
             ) : (
-              'J\'accuse'
+              "J'accuse"
             )}
           </button>
         </div>

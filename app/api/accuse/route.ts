@@ -6,7 +6,7 @@ import type { CaseSolution, Suspect } from '@/lib/supabase/types'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const { sessionId, caseId, accusedSuspectId, reasoning } = await req.json()
+  const { sessionId, caseId, accusedSuspectId } = await req.json()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -37,21 +37,19 @@ export async function POST(req: NextRequest) {
 
   // Build narrative resolution prompt
   const resolutionPrompt = isCorrect
-    ? `L'inspecteur vient d'accuser correctement ${accusedSuspectId} avec ce raisonnement : "${reasoning}"
+    ? `L'inspecteur vient d'accuser correctement ${accusedSuspectId}.
 
 Voici la résolution narrative officielle : ${solution.narrative_resolution}
 
 La vérité complète du meurtre : ${solution.motive}
 
-En te basant sur ces éléments, écris une résolution narrative dramatique et immersive (3-4 paragraphes). L'accusé avoue ou est confronté. L'affaire est résolue. Style film noir, années 40-50. Commence par la scène de l'arrestation.`
+Écris une résolution narrative dramatique et immersive (3-4 paragraphes). L'accusé avoue ou est confronté. L'affaire est résolue. Style film noir, années 40-50. Commence par la scène de l'arrestation.`
     : `L'inspecteur a accusé à tort ${accusedSuspectId}. Le vrai coupable est ${solution.culprit_name}.
-
-Raisonnement de l'inspecteur : "${reasoning}"
 
 Écris une scène narrative (2-3 paragraphes) où l'accusé prouve son innocence et le vrai coupable s'échappe ou reste libre. Le narrateur conclut sur l'échec de l'enquête avec une touche amère. Style film noir. L'inspecteur réalise son erreur.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 800,
     system: case_.system_prompt,
     messages: [{ role: 'user', content: resolutionPrompt }],

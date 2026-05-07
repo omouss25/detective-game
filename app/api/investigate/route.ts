@@ -51,10 +51,13 @@ export async function POST(req: NextRequest) {
   // Add current message
   messages.push({ role: 'user', content: message })
 
+  const systemPrompt = case_.system_prompt +
+    '\n\nRÈGLE ABSOLUE : Ne termine JAMAIS une réponse par des suggestions d\'actions, une liste de choix, ou une question du type "Que souhaitez-vous faire ?", "Que décidez-vous ?", "Quelle est votre prochaine action ?". Termine toujours sur la narration ou le dialogue, point final.'
+
   const stream = await anthropic.messages.stream({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
-    system: case_.system_prompt,
+    system: systemPrompt,
     messages,
   })
 
