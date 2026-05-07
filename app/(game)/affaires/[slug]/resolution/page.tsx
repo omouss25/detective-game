@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle, XCircle, ArrowLeft, BookOpen, Share2, Star, Trophy } from 'lucide-react'
+import { CheckCircle, XCircle, ArrowLeft, BookOpen, Star, Trophy } from 'lucide-react'
 import type { CaseSolution } from '@/lib/supabase/types'
 import { ACHIEVEMENTS } from '@/lib/subscription'
 import ShareButton from './ShareButton'
