@@ -29,8 +29,8 @@ const config: Config = {
       },
       fontFamily: {
         noir: ['Playfair Display', 'Georgia', 'serif'],
-        typewriter: ['Special Elite', 'Courier New', 'monospace'],
-        serif: ['IM Fell English', 'Georgia', 'serif'],
+        typewriter: ['Courier Prime', 'Courier New', 'monospace'],
+        serif: ['Lora', 'Georgia', 'serif'],
       },
       backgroundImage: {
         'gradient-noir': 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
