@@ -51,12 +51,19 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { difficulty = 'moyen', setting = 'Paris, France' } = await req.json()
+  let body: { difficulty?: unknown; setting?: unknown }
+  try { body = await req.json() } catch { body = {} }
+
+  const { difficulty = 'moyen', setting = 'Paris, France' } = body
 
   const validDifficulties = ['facile', 'moyen', 'difficile']
-  if (!validDifficulties.includes(difficulty)) {
+  if (typeof difficulty !== 'string' || !validDifficulties.includes(difficulty)) {
     return NextResponse.json({ error: 'Invalid difficulty' }, { status: 400 })
   }
+  if (typeof setting !== 'string' || setting.trim().length === 0 || setting.length > 200) {
+    return NextResponse.json({ error: 'Invalid setting' }, { status: 400 })
+  }
+  const safeSetting = setting.trim()
 
   try {
     const response = await anthropic.messages.create({
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
       max_tokens: 4096,
       messages: [{
         role: 'user',
-        content: GENERATION_PROMPT(difficulty, setting),
+        content: GENERATION_PROMPT(difficulty, safeSetting),
       }],
     })
 

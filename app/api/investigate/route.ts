@@ -5,7 +5,20 @@ import { createClient } from '@/lib/supabase/server'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const { sessionId, caseId, message } = await req.json()
+  let body: { sessionId?: unknown; caseId?: unknown; message?: unknown }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
+
+  const { sessionId, caseId, message } = body
+
+  if (typeof sessionId !== 'string' || typeof caseId !== 'string') {
+    return NextResponse.json({ error: 'Missing sessionId or caseId' }, { status: 400 })
+  }
+  if (typeof message !== 'string' || message.trim().length === 0) {
+    return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+  }
+  if (message.length > 2000) {
+    return NextResponse.json({ error: 'Message too long' }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -49,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Add current message
-  messages.push({ role: 'user', content: message })
+  messages.push({ role: 'user', content: message as string })
 
   const systemPrompt = case_.system_prompt +
     '\n\nRÈGLE ABSOLUE : Ne termine JAMAIS une réponse par des suggestions d\'actions, une liste de choix, ou une question du type "Que souhaitez-vous faire ?", "Que décidez-vous ?", "Quelle est votre prochaine action ?". Termine toujours sur la narration ou le dialogue, point final.'

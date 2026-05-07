@@ -6,7 +6,14 @@ import type { CaseSolution, Suspect } from '@/lib/supabase/types'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const { sessionId, caseId, accusedSuspectId } = await req.json()
+  let body: { sessionId?: unknown; caseId?: unknown; accusedSuspectId?: unknown }
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
+
+  const { sessionId, caseId, accusedSuspectId } = body
+
+  if (typeof sessionId !== 'string' || typeof caseId !== 'string' || typeof accusedSuspectId !== 'string') {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -32,8 +39,11 @@ export async function POST(req: NextRequest) {
   const solution = case_.solution as unknown as CaseSolution
   const suspects = case_.suspects as unknown as Suspect[]
 
+  const validSuspect = suspects.find(s => s.name === accusedSuspectId)
+  if (!validSuspect) return NextResponse.json({ error: 'Invalid suspect' }, { status: 400 })
+
   const isCorrect = accusedSuspectId === solution.culprit_name ||
-    suspects.find(s => s.name === accusedSuspectId)?.id === solution.culprit_id
+    validSuspect.id === solution.culprit_id
 
   // Build narrative resolution prompt
   const resolutionPrompt = isCorrect

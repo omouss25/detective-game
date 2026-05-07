@@ -115,6 +115,8 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       if (savedMsg) setMessages(prev => [...prev, savedMsg as Message])
     }
 
+    const tempId = 'streaming-' + Date.now()
+
     try {
       const response = await fetch('/api/investigate', {
         method: 'POST',
@@ -127,14 +129,19 @@ export default function InvestigationClient({ case_, session, initialMessages }:
         }),
       })
 
-      if (!response.ok) throw new Error('API error')
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = '/connexion'
+          return
+        }
+        throw new Error('API error')
+      }
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
 
       // Add placeholder assistant message
-      const tempId = 'streaming-' + Date.now()
       const tempMsg: Message = {
         id: tempId,
         session_id: session.id,
@@ -190,7 +197,7 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       }
     } catch (err) {
       console.error(err)
-      setMessages(prev => prev.filter(m => m.id !== ('streaming-' + Date.now())))
+      setMessages(prev => prev.filter(m => m.id !== tempId))
     } finally {
       setLoading(false)
       if (!isIntro) fetchSuggestions()
@@ -215,9 +222,8 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   }
 
   const handleAccusation = async () => {
-    if (!accusedSuspect) return
+    if (!accusedSuspect || accusationLoading) return
     setAccusationLoading(true)
-
 
     const { data: savedMsg } = await supabase
       .from('messages')
@@ -243,6 +249,11 @@ export default function InvestigationClient({ case_, session, initialMessages }:
           accusedSuspectId: accusedSuspect,
         }),
       })
+
+      if (!response.ok) {
+        if (response.status === 401) { window.location.href = '/connexion'; return }
+        throw new Error('Erreur lors de l\'accusation')
+      }
 
       const result = await response.json()
 

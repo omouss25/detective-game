@@ -1,18 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  invalid_link: 'Le lien de confirmation est invalide ou a expiré. Réinscrivez-vous.',
+  missing_code: 'Lien de confirmation invalide.',
+  access_denied: 'Accès refusé. Le lien a peut-être expiré.',
+}
+
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const err = searchParams.get('error')
+    if (err) setError(AUTH_ERROR_MESSAGES[err] || 'Une erreur est survenue. Réessayez.')
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
