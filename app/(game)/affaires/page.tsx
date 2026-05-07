@@ -96,7 +96,7 @@ export default async function AffairesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sessions.map((session) => {
+          {sessions.map((session, i) => {
             const case_ = session.cases
             if (!case_) return null
             const st = statusLabel[session.status as keyof typeof statusLabel] || statusLabel.abandoned
@@ -109,7 +109,8 @@ export default async function AffairesPage() {
               <Link
                 key={session.id}
                 href={href}
-                className="flex items-center justify-between p-4 rounded border border-noir-smoke/50 hover:border-noir-gold/50 transition-all group"
+                className="animate-fade-in-up flex items-center justify-between p-4 rounded border border-noir-smoke/50 hover:border-noir-gold/50 hover:bg-noir-charcoal/30 transition-all group"
+                style={{ animationDelay: `${i * 60}ms`, opacity: 0 }}
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <StatusIcon size={15} className={`flex-shrink-0 ${st.class}`} />

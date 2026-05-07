@@ -25,8 +25,8 @@ export default function Navbar({ user }: NavbarProps) {
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-noir-smoke/50 backdrop-blur-sm"
-      style={{ background: 'rgba(10,10,10,0.95)' }}>
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-noir-smoke/50 backdrop-blur-sm animate-fade-in-up"
+      style={{ background: 'rgba(10,10,10,0.97)', animationDuration: '0.4s' }}>
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
@@ -84,7 +84,7 @@ export default function Navbar({ user }: NavbarProps) {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-noir-smoke/50 bg-noir-dark px-4 py-4 flex flex-col gap-3">
+        <div className="md:hidden border-t border-noir-smoke/50 bg-noir-dark px-4 py-4 flex flex-col gap-3 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
           {user ? (
             <>
               <MobileNavLink href="/affaires" onClick={() => setMenuOpen(false)}>
@@ -120,11 +120,14 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
   return (
     <Link
       href={href}
-      className={`flex items-center gap-1.5 text-sm font-typewriter tracking-wide transition-colors ${
+      className={`relative flex items-center gap-1.5 text-sm font-typewriter tracking-wide transition-colors py-1 ${
         active ? 'text-noir-gold' : 'text-noir-silver hover:text-noir-cream'
       }`}
     >
       {children}
+      {active && (
+        <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-gradient-to-r from-transparent via-noir-gold to-transparent animate-fade-in-up" style={{ animationDuration: '0.3s' }} />
+      )}
     </Link>
   )
 }

@@ -341,7 +341,7 @@ export default function InvestigationClient({ case_, session, initialMessages }:
           onClick={() => setShowSuspects(false)}
         >
           <div
-            className="absolute right-0 top-0 h-full w-full max-w-md bg-noir-charcoal border-l border-noir-smoke/50 overflow-y-auto"
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-noir-charcoal border-l border-noir-smoke/50 overflow-y-auto animate-slide-in-right"
             onClick={e => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-noir-charcoal border-b border-noir-smoke/50 px-5 py-4 flex items-center justify-between">
@@ -352,8 +352,8 @@ export default function InvestigationClient({ case_, session, initialMessages }:
               >✕</button>
             </div>
             <div className="p-5 space-y-4">
-              {suspects.map((s) => (
-                <div key={s.id} className="border border-noir-smoke/40 rounded bg-noir-dark/50 p-4">
+              {suspects.map((s, i) => (
+                <div key={s.id} className="animate-fade-in-up border border-noir-smoke/40 rounded bg-noir-dark/50 p-4 hover:border-noir-smoke transition-colors" style={{ animationDelay: `${i * 60 + 100}ms`, opacity: 0 }}>
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
                       <div className="font-noir text-noir-cream font-bold">{s.name}</div>
@@ -441,7 +441,8 @@ export default function InvestigationClient({ case_, session, initialMessages }:
                       key={i}
                       onClick={() => sendMessage(s)}
                       disabled={loading}
-                      className="px-3 py-2.5 rounded border border-noir-smoke/50 hover:border-noir-gold/60 hover:bg-noir-sepia/20 text-noir-silver hover:text-noir-cream text-xs font-typewriter text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
+                      className="animate-fade-in-up px-3 py-2.5 rounded border border-noir-smoke/50 hover:border-noir-gold/60 hover:bg-noir-sepia/20 text-noir-silver hover:text-noir-cream text-xs font-typewriter text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
+                      style={{ animationDelay: `${i * 70}ms`, opacity: 0 }}
                     >
                       {s}
                     </button>
@@ -555,7 +556,7 @@ function AccusationModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="card-noir rounded-sm max-w-md w-full p-6 animate-fade-in-up">
+      <div className="card-noir rounded-sm max-w-md w-full p-6 animate-scale-in">
         <div className="flex items-center gap-3 mb-4">
           <Gavel size={20} className="text-red-400" />
           <h2 className="font-noir text-xl text-noir-cream">Accusation Finale</h2>
