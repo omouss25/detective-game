@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       messages: [{
         role: 'user',
@@ -103,8 +103,8 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (caseError || !savedCase) {
-      console.error('Case save error:', caseError)
-      return NextResponse.json({ error: 'Failed to save case' }, { status: 500 })
+      console.error('Case save error:', JSON.stringify(caseError))
+      return NextResponse.json({ error: 'Failed to save case', details: caseError?.message }, { status: 500 })
     }
 
     // Create game session immediately
