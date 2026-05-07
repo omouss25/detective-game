@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Send, FileText, Users, Gavel, ArrowLeft, StickyNote, PenLine
+  Send, FileText, Users, Gavel, ArrowLeft, StickyNote, PenLine, Lightbulb
 } from 'lucide-react'
 import type { Case, GameSession, Message, Suspect } from '@/lib/supabase/types'
 
@@ -32,6 +32,9 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
   const [showCustomInput, setShowCustomInput] = useState(false)
+  const [hintLoading, setHintLoading] = useState(false)
+  const [hintMessage, setHintMessage] = useState<string | null>(null)
+  const [hintsRemaining, setHintsRemaining] = useState<number | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -216,6 +219,30 @@ export default function InvestigationClient({ case_, session, initialMessages }:
     }
   }
 
+  const handleHint = async () => {
+    if (hintLoading) return
+    setHintLoading(true)
+    setHintMessage(null)
+    try {
+      const res = await fetch('/api/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, caseId: case_.id }),
+      })
+      const data = await res.json()
+      if (res.status === 403) {
+        setHintMessage('⚠ ' + (data.error === 'hint_limit_reached' ? 'Limite d\'indices atteinte. Passez au grade Commissaire pour des indices illimités.' : data.error))
+      } else if (data.hint) {
+        setHintMessage(data.hint)
+        if (data.hintsRemaining !== undefined) setHintsRemaining(data.hintsRemaining)
+      }
+    } catch {
+      setHintMessage('Impossible de récupérer un indice.')
+    } finally {
+      setHintLoading(false)
+    }
+  }
+
   const handleSuspectQuestion = (suspect: Suspect) => {
     sendMessage(`Interrogatoire de ${suspect.name} — Je veux vous parler directement, ${suspect.name}. Où étiez-vous au moment du crime ?`)
     setShowSuspects(false)
@@ -325,6 +352,17 @@ export default function InvestigationClient({ case_, session, initialMessages }:
             <span className="hidden sm:inline">Notes</span>
           </button>
           <button
+            onClick={handleHint}
+            disabled={hintLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-typewriter bg-noir-sepia/20 text-noir-gold border border-noir-sepia/40 hover:bg-noir-sepia/40 transition-colors disabled:opacity-50"
+            title={hintsRemaining !== null ? `${hintsRemaining} indice(s) restant(s)` : 'Obtenir un indice'}
+          >
+            <Lightbulb size={12} />
+            <span className="hidden sm:inline">
+              {hintLoading ? '...' : hintsRemaining !== null ? `Indice (${hintsRemaining})` : 'Indice'}
+            </span>
+          </button>
+          <button
             onClick={() => setShowAccuse(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-typewriter bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50 transition-colors"
           >
@@ -421,6 +459,33 @@ export default function InvestigationClient({ case_, session, initialMessages }:
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Hint message panel */}
+      {hintMessage && (
+        <div className={`border-t px-4 py-3 flex-shrink-0 animate-fade-in-up ${
+          hintMessage.startsWith('⚠')
+            ? 'border-amber-900/50 bg-amber-950/20'
+            : 'border-noir-sepia/40 bg-noir-sepia/10'
+        }`}>
+          <div className="max-w-4xl mx-auto flex items-start gap-3">
+            <Lightbulb size={14} className={`flex-shrink-0 mt-0.5 ${hintMessage.startsWith('⚠') ? 'text-amber-400' : 'text-noir-gold'}`} />
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-typewriter leading-relaxed ${hintMessage.startsWith('⚠') ? 'text-amber-300' : 'text-noir-gold'}`}>
+                {hintMessage}
+              </p>
+              {hintMessage.startsWith('⚠') && (
+                <a href="/tarifs" className="inline-block mt-1.5 text-xs font-typewriter text-noir-gold underline hover:text-noir-cream transition-colors">
+                  Voir les grades →
+                </a>
+              )}
+            </div>
+            <button
+              onClick={() => setHintMessage(null)}
+              className="flex-shrink-0 text-noir-smoke hover:text-noir-mist transition-colors text-base leading-none"
+            >✕</button>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="border-t border-noir-smoke/50 bg-noir-dark/95 backdrop-blur-sm px-4 py-4 flex-shrink-0">

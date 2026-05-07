@@ -73,7 +73,13 @@ export default function NewCaseClient() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Erreur de génération')
+        if (res.status === 429 && data.error === 'daily_limit_reached') {
+          setError('daily_limit_reached')
+        } else {
+          throw new Error(data.error || 'Erreur de génération')
+        }
+        setLoading(false)
+        return
       }
 
       const { caseSlug, sessionId } = await res.json()
@@ -175,11 +181,26 @@ export default function NewCaseClient() {
         </div>
       </div>
 
-      {error && (
+      {error === 'daily_limit_reached' ? (
+        <div className="mb-4 p-4 bg-amber-950/30 border border-amber-900/50 rounded">
+          <p className="text-amber-300 text-sm font-typewriter mb-2">
+            ⚠ Limite quotidienne atteinte — Vous avez utilisé votre enquête gratuite du jour.
+          </p>
+          <p className="text-amber-400/70 text-xs font-typewriter mb-3">
+            Revenez demain, ou passez à un grade supérieur pour continuer à enquêter.
+          </p>
+          <a
+            href="/tarifs"
+            className="inline-block px-4 py-2 rounded border border-noir-gold/60 text-noir-gold text-xs font-typewriter hover:bg-noir-sepia/20 transition-colors"
+          >
+            Voir les grades →
+          </a>
+        </div>
+      ) : error ? (
         <div className="mb-4 p-3 bg-red-950/50 border border-red-900/50 rounded text-red-300 text-sm font-typewriter">
           ⚠ {error}
         </div>
-      )}
+      ) : null}
 
       <button
         onClick={handleGenerate}

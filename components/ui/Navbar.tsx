@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { User, LogOut, BookOpen, Menu, X } from 'lucide-react'
+import { User, LogOut, BookOpen, Menu, X, Zap } from 'lucide-react'
 
 interface NavbarProps {
   user?: { email?: string } | null
@@ -53,6 +53,10 @@ export default function Navbar({ user }: NavbarProps) {
                 <User size={14} />
                 Profil
               </NavLink>
+              <NavLink href="/tarifs" active={isActive('/tarifs')}>
+                <Zap size={14} />
+                Grades
+              </NavLink>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-2 btn-ghost px-4 py-2 rounded text-sm"
@@ -92,6 +96,9 @@ export default function Navbar({ user }: NavbarProps) {
               </MobileNavLink>
               <MobileNavLink href="/profil" onClick={() => setMenuOpen(false)}>
                 <User size={14} /> Profil
+              </MobileNavLink>
+              <MobileNavLink href="/tarifs" onClick={() => setMenuOpen(false)}>
+                <Zap size={14} /> Grades
               </MobileNavLink>
               <button
                 onClick={() => { handleSignOut(); setMenuOpen(false) }}

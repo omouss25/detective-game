@@ -25,6 +25,10 @@ export interface Database {
           avatar_url: string | null
           cases_solved: number
           cases_attempted: number
+          total_score: number
+          streak_current: number
+          streak_best: number
+          last_played_date: string | null
           created_at: string
           updated_at: string
         }
@@ -34,6 +38,10 @@ export interface Database {
           avatar_url?: string | null
           cases_solved?: number
           cases_attempted?: number
+          total_score?: number
+          streak_current?: number
+          streak_best?: number
+          last_played_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +51,10 @@ export interface Database {
           avatar_url?: string | null
           cases_solved?: number
           cases_attempted?: number
+          total_score?: number
+          streak_current?: number
+          streak_best?: number
+          last_played_date?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -107,6 +119,10 @@ export interface Database {
           interrogated_suspects: Json
           final_accusation: string | null
           resolved_at: string | null
+          score: number | null
+          hints_used: number
+          message_count: number | null
+          started_at: string | null
           created_at: string
           updated_at: string
         }
@@ -120,6 +136,10 @@ export interface Database {
           interrogated_suspects?: Json
           final_accusation?: string | null
           resolved_at?: string | null
+          score?: number | null
+          hints_used?: number
+          message_count?: number | null
+          started_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -130,6 +150,10 @@ export interface Database {
           interrogated_suspects?: Json
           final_accusation?: string | null
           resolved_at?: string | null
+          score?: number | null
+          hints_used?: number
+          message_count?: number | null
+          started_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -156,6 +180,82 @@ export interface Database {
         Update: {
           content?: string
           metadata?: Json
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          plan: string
+          status: string
+          current_period_end: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan?: string
+          status?: string
+          current_period_end?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan?: string
+          status?: string
+          current_period_end?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_usage: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          cases_generated: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          cases_generated?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          cases_generated?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      achievements: {
+        Row: {
+          id: string
+          user_id: string
+          achievement_id: string
+          unlocked_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          achievement_id: string
+          unlocked_at?: string
+        }
+        Update: {
+          achievement_id?: string
+          unlocked_at?: string
         }
         Relationships: []
       }
@@ -206,6 +306,10 @@ export interface GameSession {
   interrogated_suspects: string[]
   final_accusation: string | null
   resolved_at: string | null
+  score: number | null
+  hints_used: number
+  message_count: number | null
+  started_at: string | null
   created_at: string
   updated_at: string
 }
