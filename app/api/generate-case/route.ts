@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
     // Generate unique slug
     const slug = `case-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
-    const { data: savedCase, error: caseError } = await supabase
+    const adminClient = createAdminClient()
+    const { data: savedCase, error: caseError } = await adminClient
       .from('cases')
       .insert({
         title: caseData.title,
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create game session immediately
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await adminClient
       .from('game_sessions')
       .insert({ user_id: user.id, case_id: savedCase.id })
       .select()
