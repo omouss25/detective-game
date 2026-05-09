@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import InvestigationClient from './InvestigationClient'
+import { getUserPlan } from '@/lib/subscription'
+import { PLANS } from '@/lib/stripe'
 import type { Case, GameSession, Message } from '@/lib/supabase/types'
 
 export default async function InvestigationPage({
@@ -18,7 +20,7 @@ export default async function InvestigationPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: session }, { data: case_ }] = await Promise.all([
+  const [{ data: session }, { data: case_ }, userPlan] = await Promise.all([
     supabase
       .from('game_sessions')
       .select('*')
@@ -30,6 +32,7 @@ export default async function InvestigationPage({
       .select('*')
       .eq('slug', slug)
       .single(),
+    getUserPlan(user!.id, supabase),
   ])
 
   if (!session || !case_) notFound()
@@ -51,6 +54,8 @@ export default async function InvestigationPage({
       case_={case_ as unknown as Case}
       session={session as unknown as GameSession}
       initialMessages={(messages || []) as unknown as Message[]}
+      hintsLimit={PLANS[userPlan].hints}
+      userPlan={userPlan}
     />
   )
 }

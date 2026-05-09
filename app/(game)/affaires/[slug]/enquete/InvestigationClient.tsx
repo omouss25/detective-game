@@ -12,10 +12,12 @@ interface Props {
   case_: Case
   session: GameSession
   initialMessages: Message[]
+  hintsLimit: number
+  userPlan: string
 }
 
 
-export default function InvestigationClient({ case_, session, initialMessages }: Props) {
+export default function InvestigationClient({ case_, session, initialMessages, hintsLimit, userPlan }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,7 +36,9 @@ export default function InvestigationClient({ case_, session, initialMessages }:
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [hintLoading, setHintLoading] = useState(false)
   const [hintMessage, setHintMessage] = useState<string | null>(null)
-  const [hintsRemaining, setHintsRemaining] = useState<number | null>(null)
+  const [hintsRemaining, setHintsRemaining] = useState<number | null>(
+    hintsLimit === Infinity ? null : hintsLimit - (session.hints_used ?? 0)
+  )
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -225,6 +229,19 @@ export default function InvestigationClient({ case_, session, initialMessages }:
 
   const handleHint = async () => {
     if (hintLoading) return
+
+    if (hintsLimit === 0) {
+      setHintMessage('⚠ Les indices sont disponibles dès le grade Inspecteur (3 indices par enquête).')
+      return
+    }
+    if (hintsRemaining !== null && hintsRemaining <= 0) {
+      const upgradeMsg = userPlan === 'inspecteur'
+        ? 'Limite d\'indices atteinte. Passez au grade Commissaire pour des indices illimités.'
+        : 'Limite d\'indices atteinte. Passez à Inspecteur pour plus d\'indices.'
+      setHintMessage('⚠ ' + upgradeMsg)
+      return
+    }
+
     setHintLoading(true)
     setHintMessage(null)
     try {
@@ -235,7 +252,11 @@ export default function InvestigationClient({ case_, session, initialMessages }:
       })
       const data = await res.json()
       if (res.status === 403) {
-        setHintMessage('⚠ ' + (data.error === 'hint_limit_reached' ? 'Limite d\'indices atteinte. Passez au grade Commissaire pour des indices illimités.' : data.error))
+        const plan: string = data.plan || userPlan
+        const upgradeMsg = plan === 'inspecteur'
+          ? 'Limite d\'indices atteinte. Passez au grade Commissaire pour des indices illimités.'
+          : 'Les indices sont disponibles dès le grade Inspecteur.'
+        setHintMessage('⚠ ' + upgradeMsg)
       } else if (data.hint) {
         setHintMessage(data.hint)
         if (data.hintsRemaining !== undefined) setHintsRemaining(data.hintsRemaining)
@@ -358,12 +379,23 @@ export default function InvestigationClient({ case_, session, initialMessages }:
           <button
             onClick={handleHint}
             disabled={hintLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-typewriter bg-noir-sepia/20 text-noir-gold border border-noir-sepia/40 hover:bg-noir-sepia/40 transition-colors disabled:opacity-50"
-            title={hintsRemaining !== null ? `${hintsRemaining} indice(s) restant(s)` : 'Obtenir un indice'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-typewriter border transition-colors disabled:opacity-50 ${
+              hintsLimit === 0
+                ? 'bg-noir-dark/50 text-noir-text/40 border-noir-sepia/20 cursor-not-allowed'
+                : 'bg-noir-sepia/20 text-noir-gold border-noir-sepia/40 hover:bg-noir-sepia/40'
+            }`}
+            title={
+              hintsLimit === 0 ? 'Disponible dès le grade Inspecteur'
+              : hintsRemaining !== null ? `${hintsRemaining} indice(s) restant(s)`
+              : 'Obtenir un indice'
+            }
           >
             <Lightbulb size={12} />
             <span className="hidden sm:inline">
-              {hintLoading ? '...' : hintsRemaining !== null ? `Indice (${hintsRemaining})` : 'Indice'}
+              {hintLoading ? '...'
+                : hintsLimit === 0 ? 'Indice 🔒'
+                : hintsRemaining !== null ? `Indice (${hintsRemaining})`
+                : 'Indice'}
             </span>
           </button>
           <button
