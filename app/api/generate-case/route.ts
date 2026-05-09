@@ -18,57 +18,42 @@ const GENRES = [
 const GENERATION_PROMPT = (difficulty: string, setting: string) => {
   const genre = GENRES[Math.floor(Math.random() * GENRES.length)]
 
-  return `Tu es un auteur de romans policiers de génie, capable d'écrire dans le style des plus grands maîtres du genre.
+  return `Tu es un auteur de romans policiers. Génère une affaire criminelle originale en JSON.
 
-MISSION : Génère une affaire criminelle UNIQUE, ORIGINALE et FASCINANTE.
+Style : ${genre.style} — ${genre.archetype}
+Difficulté : ${difficulty} | Cadre : ${setting}
 
-Paramètres :
-- Difficulté : ${difficulty}
-- Cadre : ${setting}
-- Style littéraire : ${genre.style}
-- Archétypes à utiliser : ${genre.archetype}
+Réponds UNIQUEMENT avec un JSON valide, sans markdown.
 
-PRINCIPES DE QUALITÉ (inspirés d'Agatha Christie, Simenon, Chandler) :
-1. Chaque suspect a un mobile CRÉDIBLE et un secret personnel
-2. Le vrai coupable est logiquement déductible mais surprenant
-3. Les indices sont dispersés naturellement dans le récit, jamais gratuits
-4. La psychologie prime sur l'action
-5. L'atmosphère du lieu est un personnage à part entière
-6. Le mobile doit être humain et universel : jalousie, héritage, honneur, vengeance, amour
-7. Les fausses pistes doivent sembler aussi plausibles que la vérité
-
-Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans explication.
-
-Structure exacte :
 {
-  "title": "Titre évocateur et accrocheur (8 mots max, style roman noir)",
-  "description": "2-3 phrases atmosphériques style quatrième de couverture — donne envie d'enquêter sans révéler",
-  "location": "Lieu précis et évocateur",
+  "title": "Titre court (5 mots max)",
+  "description": "1-2 phrases, ambiance mystérieuse",
+  "location": "Lieu précis",
   "year": 1947,
-  "victim": "Prénom Nom, âge ans, profession évocatrice",
+  "victim": "Prénom Nom, âge ans, profession",
   "difficulty": "${difficulty}",
   "suspects": [
     {
       "id": "identifiant_court",
       "name": "Prénom Nom",
       "role": "Relation avec la victime",
-      "description": "2-3 phrases : apparence, caractère, ce qui le rend suspect, son secret"
+      "description": "1-2 phrases : apparence et ce qui le rend suspect"
     }
   ],
   "solution": {
     "culprit_id": "identifiant",
     "culprit_name": "Prénom Nom",
-    "motive": "Mobile complet et psychologiquement crédible — 4-5 phrases détaillées, include les circonstances exactes du crime",
-    "key_clues": ["indice_précis_1", "indice_précis_2", "indice_précis_3", "indice_précis_4"],
-    "narrative_resolution": "Scène de révélation dramatique — 3 phrases style Agatha Christie au dénouement"
+    "motive": "Mobile en 2-3 phrases. Circonstances exactes du crime.",
+    "key_clues": ["indice_1", "indice_2", "indice_3"],
+    "narrative_resolution": "Révélation finale en 2 phrases."
   },
-  "system_prompt": "Instructions détaillées pour l'IA narratrice. DOIT inclure : (1) contexte complet et tous les faits cachés, (2) comportement et psychologie de chaque suspect, ce qu'il révèle/cache/ment, (3) indices découvrables et comment les trouver naturellement, (4) ambiance et style narratif (${genre.style}), (5) format des réponses narratives immersives. NE JAMAIS révéler le coupable sauf si le joueur envoie ACCUSATION_FINALE. Minimum 500 mots."
+  "system_prompt": "Tu es le narrateur de cette enquête policière. Contexte : [décris le crime, la victime, le lieu en 2-3 phrases]. Suspects et secrets : [pour chaque suspect : nom, ce qu'il cache, comment il réagit aux questions]. Solution secrète : [coupable + mobile complet — ne JAMAIS révéler sauf si le message contient ACCUSATION_FINALE]. Indices à distiller naturellement : [liste les 3 indices clés et comment les faire découvrir]. Style : ${genre.style}. Tes réponses : 2-3 paragraphes courts, atmosphère soignée, dialogues percutants. Ne jamais suggérer d'actions au joueur."
 }
 
-Règles de difficulté :
-- facile : 3-4 suspects, coupable assez évident avec indices clairs, 1-2 fausses pistes légères
-- moyen : 4-5 suspects, mobile ambigu, 2-3 fausses pistes convaincantes, indices subtils
-- difficile : 5-6 suspects tous crédibles, indices qui se contredisent, le coupable semble innocent, révélation psychologique profonde`
+Difficulté :
+- facile : 3-4 suspects, indices clairs
+- moyen : 4-5 suspects, 2-3 fausses pistes
+- difficile : 5-6 suspects, indices contradictoires`
 }
 
 export async function POST(req: NextRequest) {
@@ -110,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     const response = await getAnthropic().messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: GENERATION_PROMPT(difficulty, safeSetting) }],
     })
 

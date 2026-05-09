@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
   messages.push({ role: 'user', content: message as string })
 
   const systemPrompt = case_.system_prompt +
-    '\n\nRÈGLE ABSOLUE : Ne termine JAMAIS une réponse par des suggestions d\'actions, une liste de choix, ou une question du type "Que souhaitez-vous faire ?", "Que décidez-vous ?", "Quelle est votre prochaine action ?". Termine toujours sur la narration ou le dialogue, point final.'
+    '\n\nRÈGLES DE FORMAT : Réponds en 2-3 paragraphes courts maximum (100 mots max au total). Sois concis, atmosphérique, percutant. Ne termine JAMAIS par des suggestions d\'actions ou une question du type "Que souhaitez-vous faire ?". Termine sur la narration ou le dialogue, point final.'
 
   const stream = await getAnthropic().messages.stream({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    max_tokens: 600,
     system: systemPrompt,
     messages,
   })
