@@ -146,15 +146,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save case', details: caseError?.message }, { status: 500 })
     }
 
-    const { data: session, error: sessionError } = await adminClient
+    // Try inserting with started_at (requires migration_v2), fall back without
+    let session: { id: string } | null = null
+    const insertWithDate = await adminClient
       .from('game_sessions')
       .insert({ user_id: user.id, case_id: savedCase.id, started_at: new Date().toISOString() })
-      .select()
+      .select('id')
       .single()
 
-    if (sessionError || !session) {
-      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+    if (insertWithDate.error) {
+      // Fallback: insert without new columns (pre-migration)
+      const insertBasic = await adminClient
+        .from('game_sessions')
+        .insert({ user_id: user.id, case_id: savedCase.id })
+        .select('id')
+        .single()
+      if (insertBasic.error || !insertBasic.data) {
+        return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+      }
+      session = insertBasic.data
+    } else {
+      session = insertWithDate.data
     }
+
+    if (!session) return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
 
     // Increment daily usage + cases_attempted
     await Promise.all([

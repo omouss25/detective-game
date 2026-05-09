@@ -36,13 +36,20 @@ export async function checkCaseLimit(userId: string, supabase: SupabaseClient) {
 
 export async function incrementDailyUsage(userId: string, adminClient: SupabaseClient) {
   const today = new Date().toISOString().split('T')[0]
-  await adminClient.from('daily_usage').upsert(
-    { user_id: userId, date: today, cases_generated: 1 },
-    { onConflict: 'user_id,date', ignoreDuplicates: false }
-  )
-  // Increment if already exists
-  await adminClient.rpc('increment_daily_usage', { p_user_id: userId, p_date: today })
-    .maybeSingle()
+  try {
+    // Atomic increment via RPC (created in migration_v2)
+    const { error } = await adminClient.rpc('increment_daily_usage', { p_user_id: userId, p_date: today })
+      .maybeSingle()
+    // Fallback: upsert if RPC doesn't exist yet
+    if (error) {
+      await adminClient.from('daily_usage').upsert(
+        { user_id: userId, date: today, cases_generated: 1 },
+        { onConflict: 'user_id,date', ignoreDuplicates: true }
+      )
+    }
+  } catch {
+    // Silently ignore if daily_usage table doesn't exist yet (pre-migration)
+  }
 }
 
 export function calculateScore({
