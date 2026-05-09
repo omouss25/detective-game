@@ -9,7 +9,7 @@ export const PLANS = {
     id: 'free',
     name: 'Stagiaire',
     price: 0,
-    casesPerDay: 1,
+    casesPerDay: Infinity,
     hints: 0,
     features: ['1 enquête par jour', 'Toutes difficultés', 'Historique complet'],
   },
