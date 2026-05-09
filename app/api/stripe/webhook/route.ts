@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/server'
 import type Stripe from 'stripe'
 
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       const plan = session.metadata?.plan
       if (!userId || !plan) break
 
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      const subscription = await getStripe().subscriptions.retrieve(session.subscription as string)
       const periodEnd = (subscription as unknown as { current_period_end: number }).current_period_end
       await adminClient.from('subscriptions').upsert({
         user_id: userId,
