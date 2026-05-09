@@ -103,6 +103,11 @@ export async function POST(req: NextRequest) {
   const safeSetting = setting.trim()
 
   try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('[generate-case] ANTHROPIC_API_KEY not set')
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+    }
+
     const response = await getAnthropic().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
@@ -184,7 +189,8 @@ export async function POST(req: NextRequest) {
       remaining: remaining - 1,
     })
   } catch (err) {
-    console.error('Generation error:', err)
-    return NextResponse.json({ error: 'Generation failed' }, { status: 500 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[generate-case] Error:', msg)
+    return NextResponse.json({ error: 'Generation failed', detail: msg }, { status: 500 })
   }
 }
