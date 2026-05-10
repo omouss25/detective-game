@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const { data: session } = await supabase
     .from('game_sessions')
-    .select('id, user_id, message_count')
+    .select('id, user_id, message_count, messages_limit')
     .eq('id', sessionId)
     .eq('user_id', user.id)
     .single()
@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
   const plan = await getUserPlan(user.id, supabase)
-  const limit = PLANS[plan].messagesPerSession
+  // Use session-level limit (chosen at creation) or fallback to plan default
+  const sessionLimit = session.messages_limit as number | null
+  const limit: number | typeof Infinity = sessionLimit ?? PLANS[plan].messagesPerSession
   const count = (session.message_count as number | null) ?? 0
 
   // Block if limit reached (intro message is free)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { checkCaseLimit, incrementDailyUsage } from '@/lib/subscription'
+import { LENGTH_MODES, isLengthAvailable, type LengthMode } from '@/lib/stripe'
 
 const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -73,10 +74,10 @@ export async function POST(req: NextRequest) {
     }, { status: 429 })
   }
 
-  let body: { difficulty?: unknown; setting?: unknown }
+  let body: { difficulty?: unknown; setting?: unknown; length?: unknown }
   try { body = await req.json() } catch { body = {} }
 
-  const { difficulty = 'moyen', setting = 'Paris, France' } = body
+  const { difficulty = 'moyen', setting = 'Paris, France', length = 'moyenne' } = body
 
   const validDifficulties = ['facile', 'moyen', 'difficile']
   if (typeof difficulty !== 'string' || !validDifficulties.includes(difficulty)) {
@@ -86,6 +87,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid setting' }, { status: 400 })
   }
   const safeSetting = setting.trim()
+
+  // Resolve length mode — fallback to 'moyenne' if invalid or not available for plan
+  const safeLength: LengthMode = (typeof length === 'string' && length in LENGTH_MODES && isLengthAvailable(length as LengthMode, plan))
+    ? length as LengthMode
+    : 'moyenne'
+  const messagesLimit = LENGTH_MODES[safeLength].messages
 
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -140,7 +147,7 @@ export async function POST(req: NextRequest) {
     let session: { id: string } | null = null
     const insertWithDate = await adminClient
       .from('game_sessions')
-      .insert({ user_id: user.id, case_id: savedCase.id, started_at: new Date().toISOString() })
+      .insert({ user_id: user.id, case_id: savedCase.id, started_at: new Date().toISOString(), messages_limit: messagesLimit })
       .select('id')
       .single()
 
