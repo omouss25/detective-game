@@ -122,6 +122,7 @@ export interface Database {
           score: number | null
           hints_used: number
           message_count: number | null
+          messages_limit: number | null
           started_at: string | null
           created_at: string
           updated_at: string
@@ -139,6 +140,7 @@ export interface Database {
           score?: number | null
           hints_used?: number
           message_count?: number | null
+          messages_limit?: number | null
           started_at?: string | null
           created_at?: string
           updated_at?: string
@@ -153,6 +155,7 @@ export interface Database {
           score?: number | null
           hints_used?: number
           message_count?: number | null
+          messages_limit?: number | null
           started_at?: string | null
           updated_at?: string
         }
@@ -309,6 +312,7 @@ export interface GameSession {
   score: number | null
   hints_used: number
   message_count: number | null
+  messages_limit: number | null
   started_at: string | null
   created_at: string
   updated_at: string
