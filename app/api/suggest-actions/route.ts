@@ -7,15 +7,18 @@ const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ suggestions: defaultSuggestions() })
 
-  let body: { sessionId?: unknown }
+  let body: { sessionId?: unknown; usedActions?: unknown }
   try { body = await req.json() } catch { return NextResponse.json({ suggestions: defaultSuggestions() }) }
 
-  const { sessionId } = body
+  const { sessionId, usedActions } = body
   if (typeof sessionId !== 'string') return NextResponse.json({ suggestions: defaultSuggestions() })
 
-  // Verify session belongs to this user
+  const used: string[] = Array.isArray(usedActions)
+    ? (usedActions as unknown[]).filter((a): a is string => typeof a === 'string').slice(-20)
+    : []
+
   const { data: session } = await supabase
     .from('game_sessions')
     .select('id')
@@ -30,15 +33,19 @@ export async function POST(req: NextRequest) {
     .select('role, content')
     .eq('session_id', sessionId)
     .order('created_at', { ascending: false })
-    .limit(6)
+    .limit(8)
 
   if (!history || history.length === 0) {
     return NextResponse.json({ suggestions: defaultSuggestions() })
   }
 
   const conversationSummary = [...history].reverse()
-    .map(m => `${m.role === 'user' ? 'Inspecteur' : 'Narrateur'}: ${m.content.slice(0, 200)}`)
+    .map(m => `${m.role === 'user' ? 'Inspecteur' : 'Narrateur'}: ${m.content.slice(0, 180)}`)
     .join('\n')
+
+  const usedBlock = used.length > 0
+    ? `\nActions DÉJÀ effectuées — NE PAS répéter ni suggérer de nouveau :\n${used.map(a => `- ${a}`).join('\n')}\n`
+    : ''
 
   try {
     const response = await getAnthropic().messages.create({
@@ -46,18 +53,18 @@ export async function POST(req: NextRequest) {
       max_tokens: 256,
       messages: [{
         role: 'user',
-        content: `Tu es l'assistant d'un jeu d'enquête policière style roman noir années 40-50 en français.
+        content: `Tu es l'assistant d'un jeu d'enquête policière noir des années 40 en français.
 
-Voici la fin de la conversation entre l'inspecteur et le narrateur :
+Fin de la conversation :
 ${conversationSummary}
-
-Génère exactement 4 actions d'enquête que l'inspecteur pourrait faire maintenant.
-Règles strictes :
-- Actions neutres et naturelles, ne révèle aucun indice clé
-- Variété : mélange interrogatoires, examens, demandes d'infos
-- Court : 5-8 mots max par action, commence par un verbe
-- Français, style policier années 40
-- Réponds UNIQUEMENT avec un JSON : {"suggestions": ["action1", "action2", "action3", "action4"]}`,
+${usedBlock}
+Génère exactement 4 actions NOUVELLES et LOGIQUES pour faire progresser l'enquête.
+Règles :
+- Jamais les mêmes que les actions déjà effectuées
+- Cohérentes avec l'état ACTUEL de l'enquête (pas ce qui a déjà été exploré)
+- Court : 5-7 mots, commence par un verbe à l'infinitif
+- Style policier années 40, français
+- JSON uniquement : {"suggestions": ["action1", "action2", "action3", "action4"]}`,
       }],
     })
 
@@ -78,8 +85,8 @@ Règles strictes :
 function defaultSuggestions(): string[] {
   return [
     'Examiner la scène de crime',
-    'Interroger les suspects présents',
-    'Demander les résultats de l\'autopsie',
-    'Fouiller les effets de la victime',
+    'Consulter le rapport d\'autopsie',
+    'Fouiller les effets personnels',
+    'Interroger un témoin',
   ]
 }

@@ -65,7 +65,12 @@ export async function POST(req: NextRequest) {
   messages.push({ role: 'user', content: message as string })
 
   const systemPrompt = case_.system_prompt +
-    '\n\nRÈGLES DE FORMAT : Réponds en 2-3 paragraphes courts maximum (100 mots max au total). Sois concis, atmosphérique, percutant. Ne termine JAMAIS par des suggestions d\'actions ou une question du type "Que souhaitez-vous faire ?". Termine sur la narration ou le dialogue, point final.'
+    '\n\nRÈGLES ABSOLUES DE NARRATION :' +
+    '\n- Ne répète JAMAIS la description physique, la position, la tenue ou l\'état émotionnel d\'un personnage déjà présenté dans cette conversation. Traite-le comme connu du joueur.' +
+    '\n- Ne mentionne un personnage que s\'il est DIRECTEMENT impliqué dans la question posée. Évite toute référence aux autres.' +
+    '\n- Chaque réponse doit faire AVANCER l\'histoire. Ne reviens jamais sur ce qui a déjà été dit ou exploré.' +
+    '\n- 2-3 paragraphes courts maximum, 80-100 mots au total. Sois percutant, atmosphérique.' +
+    '\n- Ne termine JAMAIS par une question, une liste de choix ou une suggestion d\'action.'
 
   const stream = await getAnthropic().messages.stream({
     model: 'claude-sonnet-4-6',
