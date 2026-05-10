@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   FileText, Users, Gavel, ArrowLeft, StickyNote, Lightbulb,
-  Volume2, VolumeX, Music, MusicOff
+  Volume2, VolumeX, Music
 } from 'lucide-react'
 import type { Case, GameSession, Message, Suspect } from '@/lib/supabase/types'
 
@@ -485,7 +485,7 @@ export default function InvestigationClient({ case_, session, initialMessages, h
             }`}
             title={sound.enabled ? 'Couper la musique' : 'Musique d\'ambiance'}
           >
-            {sound.enabled ? <Music size={12} /> : <MusicOff size={12} />}
+            <Music size={12} className={sound.enabled ? '' : 'opacity-40'} />
           </button>
 
           {/* TTS narration */}
