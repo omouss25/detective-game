@@ -407,7 +407,7 @@ export default function InvestigationClient({ case_, session, initialMessages, h
 
   const handleSuspectQuestion = (suspect: Suspect) => {
     const action = `Interrogatoire de ${suspect.name} — Où étiez-vous au moment du crime ?`
-    setInterrogatedSuspects(prev => new Set([...prev, suspect.id]))
+    setInterrogatedSuspects(prev => { const next = new Set(prev); next.add(suspect.id); return next })
     sendMessage(action)
     setShowSuspects(false)
   }
