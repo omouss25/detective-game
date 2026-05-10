@@ -9,8 +9,9 @@ export const PLANS = {
     id: 'free',
     name: 'Stagiaire',
     price: 0,
-    casesPerDay: Infinity,
+    casesPerDay: Infinity, // temp: unlimited for testing
     hints: 0,
+    messagesPerSession: 20,
     features: ['1 enquête par jour', 'Toutes difficultés', 'Historique complet'],
   },
   inspecteur: {
@@ -20,6 +21,7 @@ export const PLANS = {
     priceId: process.env.STRIPE_PRICE_INSPECTEUR!,
     casesPerDay: 5,
     hints: 3,
+    messagesPerSession: 40,
     features: ['5 enquêtes par jour', '3 indices par enquête', 'Toutes difficultés', 'Score et classement'],
   },
   commissaire: {
@@ -29,6 +31,7 @@ export const PLANS = {
     priceId: process.env.STRIPE_PRICE_COMMISSAIRE!,
     casesPerDay: Infinity,
     hints: Infinity,
+    messagesPerSession: Infinity,
     features: ['Enquêtes illimitées', 'Indices illimités', 'Achievements exclusifs', 'Stats avancées', 'Priorité serveur'],
   },
 } as const

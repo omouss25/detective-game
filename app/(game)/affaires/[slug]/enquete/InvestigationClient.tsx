@@ -15,6 +15,7 @@ interface Props {
   initialMessages: Message[]
   hintsLimit: number
   userPlan: string
+  messagesLimit: number | null
 }
 
 // ── Ambient sound ──────────────────────────────────────────────────────────
@@ -147,7 +148,7 @@ function useTTS() {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
-export default function InvestigationClient({ case_, session, initialMessages, hintsLimit, userPlan }: Props) {
+export default function InvestigationClient({ case_, session, initialMessages, hintsLimit, userPlan, messagesLimit }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -171,6 +172,9 @@ export default function InvestigationClient({ case_, session, initialMessages, h
   const [usedActions, setUsedActions] = useState<string[]>([])
   // Track interrogated suspects
   const [interrogatedSuspects, setInterrogatedSuspects] = useState<Set<string>>(new Set())
+  // Message count tracking
+  const [messageCount, setMessageCount] = useState<number>((session.message_count as number | null) ?? 0)
+  const [limitReached, setLimitReached] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const notesTimer = useRef<NodeJS.Timeout | undefined>(undefined)
@@ -279,7 +283,20 @@ export default function InvestigationClient({ case_, session, initialMessages, h
 
       if (!response.ok) {
         if (response.status === 401) { window.location.href = '/connexion'; return }
+        if (response.status === 429) {
+          setLimitReached(true)
+          setShowAccuse(true)
+          return
+        }
         throw new Error('API error')
+      }
+
+      // Update remaining count from header
+      const remaining = response.headers.get('X-Messages-Remaining')
+      if (remaining !== null) {
+        const newCount = messagesLimit !== null ? messagesLimit - parseInt(remaining) : 0
+        setMessageCount(newCount)
+        if (parseInt(remaining) <= 0) setLimitReached(true)
       }
 
       const reader = response.body?.getReader()
@@ -511,6 +528,19 @@ export default function InvestigationClient({ case_, session, initialMessages, h
               {hintLoading ? '...' : hintsLimit === 0 ? 'Indice 🔒' : hintsRemaining !== null ? `Indice (${hintsRemaining})` : 'Indice'}
             </span>
           </button>
+          {/* Message counter */}
+          {messagesLimit !== null && (
+            <span className={`text-xs font-typewriter px-2 py-1 rounded border ${
+              limitReached
+                ? 'text-red-400 border-red-900/50 bg-red-950/30'
+                : messagesLimit - messageCount <= Math.ceil(messagesLimit * 0.3)
+                ? 'text-amber-400 border-amber-900/40 bg-amber-950/20'
+                : 'text-noir-smoke border-noir-smoke/30'
+            }`} title="Messages restants dans cette enquête">
+              {limitReached ? '⏱ Clos' : `${messagesLimit - messageCount}/${messagesLimit}`}
+            </span>
+          )}
+
           <button
             onClick={() => setShowAccuse(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-typewriter bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50 transition-colors"
@@ -625,7 +655,19 @@ export default function InvestigationClient({ case_, session, initialMessages, h
       {/* Action suggestions */}
       <div className="border-t border-noir-smoke/50 bg-noir-dark/95 backdrop-blur-sm px-4 py-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto">
-          {suggestionsLoading ? (
+          {limitReached ? (
+            <div className="border border-red-900/50 bg-red-950/20 rounded p-3 text-center">
+              <p className="text-red-300 text-xs font-typewriter mb-2">
+                ⏱ Dossier clos — il est temps de trancher.
+              </p>
+              <button
+                onClick={() => setShowAccuse(true)}
+                className="px-4 py-2 rounded text-xs font-typewriter font-bold uppercase tracking-wider bg-red-900 hover:bg-red-800 text-red-100 border border-red-700 transition-colors"
+              >
+                Faire mon accusation
+              </button>
+            </div>
+          ) : suggestionsLoading ? (
             <div className="grid grid-cols-2 gap-2">
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="h-10 rounded border border-noir-smoke/30 bg-noir-charcoal/30 animate-pulse" />

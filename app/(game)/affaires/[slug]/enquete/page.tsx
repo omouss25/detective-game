@@ -56,6 +56,7 @@ export default async function InvestigationPage({
       initialMessages={(messages || []) as unknown as Message[]}
       hintsLimit={PLANS[userPlan].hints}
       userPlan={userPlan}
+      messagesLimit={PLANS[userPlan].messagesPerSession === Infinity ? null : PLANS[userPlan].messagesPerSession as number}
     />
   )
 }
